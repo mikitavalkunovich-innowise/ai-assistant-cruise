@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+import type { RegulatoryAlert, ScanRun } from "@/lib/types";
+import { AlertCard } from "./AlertCard";
+import { RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+
+interface MonitorDashboardProps {
+  initialAlerts: RegulatoryAlert[];
+  initialScanRuns: ScanRun[];
+}
+
+export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDashboardProps) {
+  const [alerts, setAlerts] = useState(initialAlerts);
+  const [scanRuns, setScanRuns] = useState(initialScanRuns);
+  const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [scanErrors, setScanErrors] = useState<{ source: string; error: string }[]>([]);
+
+  const runScan = async () => {
+    setScanning(true);
+    setError(null);
+    setScanErrors([]);
+    try {
+      const res = await fetch("/api/compliance/scan", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Scan failed");
+      setAlerts((prev) => [...data.alerts, ...prev]);
+      setScanRuns((prev) => [data.scanRun, ...prev]);
+      if (data.errors?.length > 0) setScanErrors(data.errors);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Scan failed");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Regulatory Monitor</h2>
+          <p className="text-sm text-gray-500">
+            Agent 1A — scans IMO, USCG, CDC VSP RSS feeds daily
+          </p>
+        </div>
+        <button onClick={runScan} className="btn-primary" disabled={scanning}>
+          {scanning ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Scanning...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4" />
+              Run Scan Now
+            </>
+          )}
+        </button>
+      </div>
+
+      {error && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          <AlertTriangle className="h-4 w-4" />
+          {error}
+        </div>
+      )}
+
+      {scanErrors.length > 0 && (
+        <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          <p className="font-medium">Some feeds unavailable:</p>
+          <ul className="mt-1 list-inside list-disc">
+            {scanErrors.map((e) => (
+              <li key={e.source}>
+                {e.source}: {e.error}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {scanRuns.length > 0 && (
+        <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="card text-center">
+            <p className="text-2xl font-bold text-ncl-blue">{scanRuns[0].itemsFetched}</p>
+            <p className="text-xs text-gray-500">Items analyzed (last scan)</p>
+          </div>
+          <div className="card text-center">
+            <p className="text-2xl font-bold text-amber-600">{scanRuns[0].alertsCreated}</p>
+            <p className="text-xs text-gray-500">Alerts created</p>
+          </div>
+          <div className="card text-center">
+            <p className="text-2xl font-bold text-gray-600">
+              {scanRuns[0].completedAt ? formatDate(scanRuns[0].completedAt) : "—"}
+            </p>
+            <p className="text-xs text-gray-500">Last scan</p>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {alerts.length === 0 ? (
+          <div className="card text-center py-12 text-gray-500">
+            <p>No alerts yet. Click &ldquo;Run Scan Now&rdquo; to fetch regulatory news.</p>
+          </div>
+        ) : (
+          alerts.map((alert) => <AlertCard key={alert.id} alert={alert} />)
+        )}
+      </div>
+    </div>
+  );
+}

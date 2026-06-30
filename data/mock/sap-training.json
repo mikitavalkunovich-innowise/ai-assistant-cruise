@@ -1,0 +1,167 @@
+[
+  {
+    "id": "ta-001",
+    "employeeId": "EMP-1042",
+    "employeeName": "Elena Rodriguez",
+    "employeeEmail": "elena.rodriguez@ncl.crew",
+    "certification": "STCW Basic Safety Training",
+    "dueDate": "2026-05-15",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-002",
+    "employeeId": "EMP-1087",
+    "employeeName": "Piotr Nowak",
+    "employeeEmail": "piotr.nowak@ncl.crew",
+    "certification": "Fire Safety Training",
+    "dueDate": "2026-06-01",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-003",
+    "employeeId": "EMP-1123",
+    "employeeName": "Yuki Tanaka",
+    "employeeEmail": "yuki.tanaka@ncl.crew",
+    "certification": "USPH Sanitation Certificate",
+    "dueDate": "2026-04-20",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-004",
+    "employeeId": "EMP-1156",
+    "employeeName": "Ahmed Hassan",
+    "employeeEmail": "ahmed.hassan@ncl.crew",
+    "certification": "STCW Advanced Fire Fighting",
+    "dueDate": "2026-06-10",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-005",
+    "employeeId": "EMP-1201",
+    "employeeName": "Sofia Petrov",
+    "employeeEmail": "sofia.petrov@ncl.crew",
+    "certification": "Medical First Aid",
+    "dueDate": "2026-05-28",
+    "managerId": "MGR-202",
+    "managerName": "Sarah Mitchell",
+    "managerEmail": "officer@ncl.demo"
+  },
+  {
+    "id": "ta-006",
+    "employeeId": "EMP-1234",
+    "employeeName": "Carlos Mendez",
+    "employeeEmail": "carlos.mendez@ncl.crew",
+    "certification": "USPH Sanitation Certificate",
+    "dueDate": "2026-06-15",
+    "managerId": "MGR-202",
+    "managerName": "Sarah Mitchell",
+    "managerEmail": "officer@ncl.demo"
+  },
+  {
+    "id": "ta-007",
+    "employeeId": "EMP-1267",
+    "employeeName": "Ingrid Larsson",
+    "employeeEmail": "ingrid.larsson@ncl.crew",
+    "certification": "STCW Basic Safety Training",
+    "dueDate": "2026-03-30",
+    "managerId": "MGR-202",
+    "managerName": "Sarah Mitchell",
+    "managerEmail": "officer@ncl.demo"
+  },
+  {
+    "id": "ta-008",
+    "employeeId": "EMP-1290",
+    "employeeName": "Raj Patel",
+    "employeeEmail": "raj.patel@ncl.crew",
+    "certification": "Fire Safety Training",
+    "dueDate": "2026-06-20",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-009",
+    "employeeId": "EMP-1312",
+    "employeeName": "Maria Santos",
+    "employeeEmail": "maria.santos@ncl.crew",
+    "certification": "MLC Seafarer Welfare",
+    "dueDate": "2026-05-05",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-010",
+    "employeeId": "EMP-1345",
+    "employeeName": "Thomas Mueller",
+    "employeeEmail": "thomas.mueller@ncl.crew",
+    "certification": "STCW Advanced Fire Fighting",
+    "dueDate": "2026-04-10",
+    "managerId": "MGR-202",
+    "managerName": "Sarah Mitchell",
+    "managerEmail": "officer@ncl.demo"
+  },
+  {
+    "id": "ta-011",
+    "employeeId": "EMP-1378",
+    "employeeName": "Fatima Al-Rashid",
+    "employeeEmail": "fatima.alrashid@ncl.crew",
+    "certification": "USPH Sanitation Certificate",
+    "dueDate": "2026-06-25",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-012",
+    "employeeId": "EMP-1401",
+    "employeeName": "Kenji Yamamoto",
+    "employeeEmail": "kenji.yamamoto@ncl.crew",
+    "certification": "Medical First Aid",
+    "dueDate": "2026-05-12",
+    "managerId": "MGR-202",
+    "managerName": "Sarah Mitchell",
+    "managerEmail": "officer@ncl.demo"
+  },
+  {
+    "id": "ta-013",
+    "employeeId": "EMP-1434",
+    "employeeName": "Lucia Fernandez",
+    "employeeEmail": "lucia.fernandez@ncl.crew",
+    "certification": "STCW Basic Safety Training",
+    "dueDate": "2026-06-05",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  },
+  {
+    "id": "ta-014",
+    "employeeId": "EMP-1467",
+    "employeeName": "Oleg Volkov",
+    "employeeEmail": "oleg.volkov@ncl.crew",
+    "certification": "Fire Safety Training",
+    "dueDate": "2026-04-25",
+    "managerId": "MGR-202",
+    "managerName": "Sarah Mitchell",
+    "managerEmail": "officer@ncl.demo"
+  },
+  {
+    "id": "ta-015",
+    "employeeId": "EMP-1490",
+    "employeeName": "Amara Okafor",
+    "employeeEmail": "amara.okafor@ncl.crew",
+    "certification": "MLC Seafarer Welfare",
+    "dueDate": "2026-06-18",
+    "managerId": "MGR-201",
+    "managerName": "James Chen",
+    "managerEmail": "manager@ncl.demo"
+  }
+]
