@@ -1,5 +1,4 @@
 import { Pool, PoolClient } from "pg";
-import pgvector from "pgvector/pg";
 
 let pool: Pool | null = null;
 
@@ -20,7 +19,6 @@ export function getPool(): Pool {
 export async function withClient<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
   const client = await getPool().connect();
   try {
-    await pgvector.registerTypes(client);
     return await fn(client);
   } finally {
     client.release();

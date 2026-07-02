@@ -2,9 +2,7 @@ import { withClient } from "./client";
 
 export async function runMigrations(): Promise<void> {
   await withClient(async (client) => {
-    await client.query("CREATE EXTENSION IF NOT EXISTS vector");
-    await client.query("CREATE EXTENSION IF NOT EXISTS pgcrypto");
-
+    // Standard Railway Postgres has no pgvector — embeddings stored as JSONB
     await client.query(`
       CREATE TABLE IF NOT EXISTS documents (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -16,6 +14,20 @@ export async function runMigrations(): Promise<void> {
       )
     `);
 
+    // Recreate chunks if upgrading from pgvector schema
+    const chunksCheck = await client.query(`
+      SELECT data_type FROM information_schema.columns
+      WHERE table_name = 'chunks' AND column_name = 'embedding'
+    `);
+
+    const needsRecreate =
+      chunksCheck.rows.length > 0 &&
+      chunksCheck.rows[0].data_type !== "jsonb";
+
+    if (needsRecreate) {
+      await client.query("DROP TABLE IF EXISTS chunks CASCADE");
+    }
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS chunks (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -23,18 +35,14 @@ export async function runMigrations(): Promise<void> {
         content TEXT NOT NULL,
         page_number INTEGER,
         chunk_index INTEGER NOT NULL,
-        embedding vector(1536),
+        embedding JSONB,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
 
     await client.query(`
-      CREATE INDEX IF NOT EXISTS chunks_embedding_idx
-      ON chunks USING ivfflat (embedding vector_cosine_ops)
-      WITH (lists = 100)
-    `).catch(() => {
-      // ivfflat requires data; fallback index created later
-    });
+      CREATE INDEX IF NOT EXISTS chunks_document_id_idx ON chunks(document_id)
+    `);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS alerts (

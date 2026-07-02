@@ -1,5 +1,6 @@
 import { withClient } from "@/lib/db/client";
 import { embedText } from "@/lib/openai";
+import { cosineSimilarity } from "@/lib/rag/similarity";
 import type { KnowledgeBase, RetrievedChunk } from "@/lib/types";
 
 const CHUNK_SIZE = 500;
@@ -69,7 +70,7 @@ export async function retrieveChunks(
   kb: KnowledgeBase,
   topK = 5
 ): Promise<RetrievedChunk[]> {
-  const embedding = await embedText(query);
+  const queryEmbedding = await embedText(query);
 
   return withClient(async (client) => {
     const result = await client.query(
@@ -77,27 +78,33 @@ export async function retrieveChunks(
         c.id,
         c.content,
         c.page_number,
+        c.embedding,
         d.title AS document_title,
         d.id AS document_id,
-        d.source_url,
-        1 - (c.embedding <=> $1::vector) AS similarity
+        d.source_url
       FROM chunks c
       JOIN documents d ON d.id = c.document_id
-      WHERE d.kb = $2 AND c.embedding IS NOT NULL
-      ORDER BY c.embedding <=> $1::vector
-      LIMIT $3`,
-      [JSON.stringify(embedding), kb, topK]
+      WHERE d.kb = $1 AND c.embedding IS NOT NULL`,
+      [kb]
     );
 
-    return result.rows.map((row) => ({
-      id: row.id,
-      content: row.content,
-      pageNumber: row.page_number,
-      documentTitle: row.document_title,
-      documentId: row.document_id,
-      sourceUrl: row.source_url,
-      similarity: parseFloat(row.similarity),
-    }));
+    const scored = result.rows
+      .map((row) => {
+        const embedding = row.embedding as number[];
+        return {
+          id: row.id as string,
+          content: row.content as string,
+          pageNumber: row.page_number as number | null,
+          documentTitle: row.document_title as string,
+          documentId: row.document_id as string,
+          sourceUrl: row.source_url as string | null,
+          similarity: cosineSimilarity(queryEmbedding, embedding),
+        };
+      })
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, topK);
+
+    return scored;
   });
 }
 
@@ -111,6 +118,15 @@ export async function getDocumentCount(kb?: KnowledgeBase): Promise<number> {
       return result.rows[0].count as number;
     }
     const result = await client.query(`SELECT COUNT(*)::int AS count FROM documents`);
+    return result.rows[0].count as number;
+  });
+}
+
+export async function getChunkCount(): Promise<number> {
+  return withClient(async (client) => {
+    const result = await client.query(
+      `SELECT COUNT(*)::int AS count FROM chunks WHERE embedding IS NOT NULL`
+    );
     return result.rows[0].count as number;
   });
 }

@@ -6,7 +6,7 @@ Dual-bot prototype for Norwegian Cruise Lines: **HR Hub** + **Compliance Auditor
 
 - Next.js 15 + TypeScript + Tailwind
 - OpenAI GPT-4o-mini + text-embedding-3-small
-- PostgreSQL + pgvector (Railway)
+- PostgreSQL (embeddings as JSONB — works on standard Railway Postgres)
 
 ## Local Setup
 
@@ -41,10 +41,24 @@ Open http://localhost:3000
 
 ## Railway Deploy
 
-1. Create Railway project, add PostgreSQL plugin
-2. Set env vars: `OPENAI_API_KEY`, `DATABASE_URL` (from Railway Postgres)
-3. Deploy from GitHub
-4. Run once: `railway run npm run db:migrate && railway run npm run db:seed`
+### Option A: Standard Railway PostgreSQL (recommended)
+
+Works out of the box — no pgvector extension required. Embeddings are stored as JSONB and similarity search runs in the app.
+
+1. Create Railway project → deploy from GitHub (`ai-assistant-cruise`)
+2. Add **PostgreSQL** database
+3. In the app service Variables:
+   - `OPENAI_API_KEY` = your OpenAI key
+   - `DATABASE_URL` = reference from Postgres service
+   - `NODE_ENV` = `production`
+4. Generate public domain (Settings → Networking)
+5. Redeploy — `releaseCommand` in `railway.toml` runs migrate + seed automatically
+
+Verify: `https://your-domain/api/health` should return `"status": "ok"`, `hrDocs: 4`, `complianceDocs: 3`.
+
+### Option B: Railway pgvector template (optional, for scale)
+
+If you need native vector indexes at larger scale, use Railway's [pgvector template](https://railway.com/deploy/pgvector-latest) instead of standard Postgres. The app also works with pgvector — migrate will store embeddings as JSONB regardless.
 
 ## Production Roadmap (not in prototype)
 
