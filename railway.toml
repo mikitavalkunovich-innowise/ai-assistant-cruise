@@ -3,7 +3,6 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "npm run start"
-releaseCommand = "npm run db:migrate && npm run db:seed"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"

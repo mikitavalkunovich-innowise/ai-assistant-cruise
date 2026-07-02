@@ -34,4 +34,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npm run db:migrate && npm run db:seed && node server.js"]
+CMD ["sh", "-c", "node server.js"]
