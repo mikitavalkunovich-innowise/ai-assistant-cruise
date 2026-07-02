@@ -29,3 +29,11 @@ export function parseCitationReferences(text: string): number[] {
   }
   return Array.from(indices).sort((a, b) => a - b);
 }
+
+export function filterUsedCitations(
+  citations: Citation[],
+  answerText: string
+): Citation[] {
+  const used = new Set(parseCitationReferences(answerText));
+  return citations.filter((c) => used.has(c.index));
+}

@@ -1,6 +1,6 @@
 import { getOpenAI, CHAT_MODEL } from "@/lib/openai";
 import { retrieveChunks } from "@/lib/rag/ingest";
-import { buildContextFromChunks, chunksToCitations } from "@/lib/rag/citations";
+import { buildContextFromChunks, chunksToCitations, filterUsedCitations } from "@/lib/rag/citations";
 import type { Citation, KnowledgeBase } from "@/lib/types";
 
 const COMPLIANCE_SYSTEM_PROMPT = `You are the NCL Marine Safety & Compliance Q&A Assistant (Agent 2).
@@ -9,6 +9,7 @@ You help compliance officers and managers answer questions about maritime regula
 Rules:
 - Answer ONLY using the provided context documents. If the answer is not in the context, say "I don't have sufficient information in the compliance knowledge base to answer that."
 - Always cite sources using [1], [2], etc. matching the context reference numbers.
+- Only cite source numbers you actually used in your answer. Do not reference unused context blocks.
 - Be precise and professional. Include specific requirements, thresholds, and procedures when available.
 - For certification questions, mention validity periods and renewal requirements if stated in context.
 - Respond in the same language the user writes in.`;
@@ -19,6 +20,7 @@ You help employees with HR questions about policies, benefits, leave, conduct, a
 Rules:
 - Answer ONLY using the provided HR policy documents. If the answer is not in the context, say "I don't have that information in the HR knowledge base. Please contact HR directly."
 - Always cite sources using [1], [2], etc. matching the context reference numbers.
+- Only cite source numbers you actually used in your answer. Do not reference unused context blocks.
 - Be friendly, clear, and supportive. Cruise ship and hotel staff may be new to maritime HR policies.
 - For onboarding questions, provide step-by-step guidance when available in context.
 - Respond in the same language the user writes in (NCL crew speaks 30+ languages).`;
@@ -42,7 +44,7 @@ export async function generateRAGResponse(params: {
   }
 
   const context = buildContextFromChunks(chunks);
-  const citations = chunksToCitations(chunks);
+  const allCitations = chunksToCitations(chunks);
   const systemPrompt = kb === "compliance" ? COMPLIANCE_SYSTEM_PROMPT : HR_SYSTEM_PROMPT;
 
   const openai = getOpenAI();
@@ -68,6 +70,8 @@ export async function generateRAGResponse(params: {
     response.choices[0]?.message?.content ??
     "I was unable to generate a response. Please try again.";
 
+  const citations = filterUsedCitations(allCitations, content);
+
   return { content, citations };
 }
 
@@ -92,7 +96,7 @@ export async function* streamRAGResponse(params: {
   }
 
   const context = buildContextFromChunks(chunks);
-  const citations = chunksToCitations(chunks);
+  const allCitations = chunksToCitations(chunks);
   const systemPrompt = kb === "compliance" ? COMPLIANCE_SYSTEM_PROMPT : HR_SYSTEM_PROMPT;
 
   const openai = getOpenAI();
@@ -112,12 +116,14 @@ export async function* streamRAGResponse(params: {
     stream: true,
   });
 
+  let fullContent = "";
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta?.content;
     if (delta) {
+      fullContent += delta;
       yield { type: "content", data: delta };
     }
   }
 
-  yield { type: "citations", data: citations };
+  yield { type: "citations", data: filterUsedCitations(allCitations, fullContent) };
 }
