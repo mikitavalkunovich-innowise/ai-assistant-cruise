@@ -3,10 +3,11 @@ import { RSS_SOURCES } from "./sources";
 import type { RSSItem } from "@/lib/agents/analyzer";
 
 const parser = new Parser({
-  timeout: 15000,
+  timeout: 20000,
   headers: {
-    "User-Agent": "NCL-Compliance-Monitor/1.0",
-    Accept: "application/rss+xml, application/xml, text/xml",
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    Accept: "application/rss+xml, application/xml, text/xml, */*",
   },
 });
 

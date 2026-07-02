@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { RegulatoryAlert, ScanRun } from "@/lib/types";
 import { AlertCard } from "./AlertCard";
 import { RefreshCw, Loader2, AlertTriangle } from "lucide-react";
@@ -18,17 +18,26 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
   const [error, setError] = useState<string | null>(null);
   const [scanErrors, setScanErrors] = useState<{ source: string; error: string }[]>([]);
 
-  const runScan = async () => {
+  useEffect(() => {
+    setAlerts(initialAlerts);
+    setScanRuns(initialScanRuns);
+  }, [initialAlerts, initialScanRuns]);
+
+  const runScan = async (demo = false) => {
     setScanning(true);
     setError(null);
     setScanErrors([]);
     try {
-      const res = await fetch("/api/compliance/scan", { method: "POST" });
+      const res = await fetch("/api/compliance/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demo ? { demo: true } : { demo: false }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scan failed");
       setAlerts((prev) => [...data.alerts, ...prev]);
       setScanRuns((prev) => [data.scanRun, ...prev]);
-      if (data.errors?.length > 0) setScanErrors(data.errors);
+      if (data.errors?.length > 0 && !data.usedMock) setScanErrors(data.errors);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed");
     } finally {
@@ -45,19 +54,35 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
             Agent 1A — scans IMO, USCG, CDC VSP RSS feeds daily
           </p>
         </div>
-        <button onClick={runScan} className="btn-primary" disabled={scanning}>
-          {scanning ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Scanning...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              Run Scan Now
-            </>
-          )}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => runScan(true)} className="btn-secondary" disabled={scanning}>
+            {scanning ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              "Load Demo Alerts"
+            )}
+          </button>
+          <button onClick={() => runScan(false)} className="btn-primary" disabled={scanning}>
+            {scanning ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Scanning...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                Run Scan Now
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
+        Prototype demo — use &ldquo;Load Demo Alerts&rdquo; for sample data, or &ldquo;Run Scan Now&rdquo; for live RSS feeds.
       </div>
 
       {error && (
@@ -102,7 +127,10 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
       <div className="space-y-4">
         {alerts.length === 0 ? (
           <div className="card text-center py-12 text-gray-500">
-            <p>No alerts yet. Click &ldquo;Run Scan Now&rdquo; to fetch regulatory news.</p>
+            <p>
+              No alerts yet. Click &ldquo;Load Demo Alerts&rdquo; for sample data or &ldquo;Run Scan
+              Now&rdquo; to scan live RSS feeds.
+            </p>
           </div>
         ) : (
           alerts.map((alert) => <AlertCard key={alert.id} alert={alert} />)

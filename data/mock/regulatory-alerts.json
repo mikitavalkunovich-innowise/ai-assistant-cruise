@@ -1,0 +1,50 @@
+[
+  {
+    "title": "IMO issues guidance on revised STCW refresher training intervals",
+    "summary": "The International Maritime Organization published updated guidance clarifying that STCW Basic Safety Training refresher courses must be completed within 5 years of initial certification. Companies are advised to audit crew records before the next PSC season.",
+    "severity": "warning",
+    "sourceName": "IMO News",
+    "sourceUrl": "https://www.imo.org/en/MediaCentre/PressBriefings/Pages/Default.aspx",
+    "publishedAt": "2026-06-25T09:00:00Z"
+  },
+  {
+    "title": "USCG announces expanded Port State Control examination focus for 2026",
+    "summary": "The U.S. Coast Guard will prioritize fire safety systems, lifesaving appliances, and crew certification verification during foreign-flag cruise vessel examinations. Operators should complete pre-arrival checklists 72 hours before US port calls.",
+    "severity": "critical",
+    "sourceName": "USCG Maritime Commons",
+    "sourceUrl": "https://maritime.dot.gov/blog",
+    "publishedAt": "2026-06-22T14:30:00Z"
+  },
+  {
+    "title": "CDC VSP updates galley temperature monitoring requirements",
+    "summary": "CDC Vessel Sanitation Program reminds operators that hot holding units must maintain 135°F (57°C) or above with continuous temperature logs. Recent inspections cited improper log maintenance as a recurring deficiency.",
+    "severity": "warning",
+    "sourceName": "CDC VSP Updates",
+    "sourceUrl": "https://www.cdc.gov/vessel-sanitation/about/index.html",
+    "publishedAt": "2026-06-20T11:15:00Z"
+  },
+  {
+    "title": "MLC amendments on seafarer hours of rest enter enforcement phase",
+    "summary": "Flag states are increasing MLC compliance checks on hours of rest records and overtime documentation. Managers should verify that shipboard timekeeping aligns with collective bargaining agreements.",
+    "severity": "info",
+    "sourceName": "IMO News",
+    "sourceUrl": "https://www.imo.org/en/MediaCentre/PressBriefings/Pages/Default.aspx",
+    "publishedAt": "2026-06-18T08:45:00Z"
+  },
+  {
+    "title": "USCG NVIC reminder: advance Notice of Arrival required 96 hours before US calls",
+    "summary": "Foreign-flag passenger vessels must submit NOA via NVMC at least 96 hours before arrival. Late or incomplete crew certification data may result in Code 17 deficiencies requiring rectification before departure.",
+    "severity": "warning",
+    "sourceName": "USCG Maritime Commons",
+    "sourceUrl": "https://maritime.dot.gov/blog",
+    "publishedAt": "2026-06-15T16:00:00Z"
+  },
+  {
+    "title": "Industry advisory: increased PSC detentions for expired firefighting certifications",
+    "summary": "Multiple port states report detentions linked to expired Advanced Fire Fighting certificates among safety team members. Operators should run a fleet-wide certification audit within 14 days.",
+    "severity": "critical",
+    "sourceName": "Maritime Executive",
+    "sourceUrl": "https://www.maritime-executive.com",
+    "publishedAt": "2026-06-12T10:20:00Z"
+  }
+]

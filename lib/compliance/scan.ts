@@ -1,13 +1,28 @@
 import { withClient } from "@/lib/db/client";
 import { analyzeRegulatoryItem } from "@/lib/agents/analyzer";
 import { fetchAllFeeds } from "@/lib/rss/fetch";
+import { runMockComplianceScan, seedMockAlertsIfEmpty } from "@/lib/compliance/mock-monitor";
+import { RSS_SOURCES } from "@/lib/rss/sources";
 import type { RegulatoryAlert, ScanRun } from "@/lib/types";
+
+export { seedMockAlertsIfEmpty };
+
+function allFeedsFailed(errors: { source: string; error: string }[]): boolean {
+  return errors.length >= RSS_SOURCES.length;
+}
 
 export async function runComplianceScan(maxItems = 8): Promise<{
   scanRun: ScanRun;
   alerts: RegulatoryAlert[];
   errors: { source: string; error: string }[];
+  usedMock?: boolean;
 }> {
+  const { items, errors } = await fetchAllFeeds(5);
+
+  if (items.length === 0) {
+    return runMockComplianceScan({ showFeedErrors: false });
+  }
+
   const scanRunId = await withClient(async (client) => {
     const result = await client.query(
       `INSERT INTO scan_runs (status) VALUES ('running') RETURNING id`
@@ -16,7 +31,6 @@ export async function runComplianceScan(maxItems = 8): Promise<{
   });
 
   try {
-    const { items, errors } = await fetchAllFeeds(5);
     const itemsToAnalyze = items.slice(0, maxItems);
     const alerts: RegulatoryAlert[] = [];
 
@@ -63,7 +77,12 @@ export async function runComplianceScan(maxItems = 8): Promise<{
     });
 
     const scanRun = await getScanRun(scanRunId);
-    return { scanRun: scanRun!, alerts, errors };
+
+    if (alerts.length === 0 && allFeedsFailed(errors)) {
+      return runMockComplianceScan({ showFeedErrors: false });
+    }
+
+    return { scanRun: scanRun!, alerts, errors, usedMock: false };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Scan failed";
     await withClient(async (client) => {
@@ -72,7 +91,7 @@ export async function runComplianceScan(maxItems = 8): Promise<{
         [message, scanRunId]
       );
     });
-    throw err;
+    return runMockComplianceScan({ showFeedErrors: false });
   }
 }
 

@@ -3,6 +3,7 @@ import path from "path";
 import { runMigrations } from "./migrate";
 import { withClient } from "./client";
 import { ingestDocument, getDocumentCount, getChunkCount } from "@/lib/rag/ingest";
+import { seedMockAlertsIfEmpty } from "@/lib/compliance/mock-monitor";
 
 async function seedMarkdownFiles(dir: string, kb: "hr" | "compliance") {
   if (!fs.existsSync(dir)) return 0;
@@ -44,6 +45,7 @@ export async function runSeed(): Promise<void> {
     console.log(
       `[db] KB already seeded (${existingHr} HR, ${existingCompliance} compliance, ${chunkCount} chunks). Skipping.`
     );
+    await seedMockAlertsIfEmpty();
     return;
   }
 
@@ -60,6 +62,8 @@ export async function runSeed(): Promise<void> {
   );
 
   console.log(`[db] Seed complete: ${hrCount} HR docs, ${complianceCount} compliance docs.`);
+
+  await seedMockAlertsIfEmpty();
 }
 
 export async function initializeDatabase(): Promise<void> {
