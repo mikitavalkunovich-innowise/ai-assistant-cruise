@@ -1,4 +1,14 @@
-export type KnowledgeBase = "hr" | "compliance";
+export type KnowledgeBase = "hr" | "compliance" | "sandbox";
+
+export interface RagSearchSettings {
+  topK: number;
+  minSimilarity: number;
+}
+
+export const DEFAULT_RAG_SETTINGS: RagSearchSettings = {
+  topK: 8,
+  minSimilarity: 0.12,
+};
 
 export interface RetrievedChunk {
   id: string;
@@ -17,6 +27,7 @@ export interface Citation {
   excerpt: string;
   sourceUrl: string | null;
   chunkId: string;
+  similarity?: number;
 }
 
 export type Severity = "info" | "warning" | "critical";

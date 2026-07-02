@@ -3,9 +3,10 @@ import { FileText, ExternalLink } from "lucide-react";
 
 interface CitationListProps {
   citations: Citation[];
+  showSimilarity?: boolean;
 }
 
-export function CitationList({ citations }: CitationListProps) {
+export function CitationList({ citations, showSimilarity = false }: CitationListProps) {
   if (citations.length === 0) return null;
 
   return (
@@ -27,6 +28,11 @@ export function CitationList({ citations }: CitationListProps) {
                   <span className="truncate">{c.documentTitle}</span>
                   {c.pageNumber && (
                     <span className="text-gray-400">p.{c.pageNumber}</span>
+                  )}
+                  {showSimilarity && c.similarity !== undefined && (
+                    <span className="ml-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-normal text-emerald-700">
+                      {(c.similarity * 100).toFixed(0)}% match
+                    </span>
                   )}
                 </div>
                 <p className="mt-0.5 text-gray-500 italic">&ldquo;{c.excerpt}&rdquo;</p>

@@ -92,5 +92,14 @@ export async function runMigrations(): Promise<void> {
         UNIQUE(user_email, step_id)
       )
     `);
+
+    // Allow sandbox KB for RAG Lab (upgrade existing deployments)
+    await client.query(`
+      ALTER TABLE documents DROP CONSTRAINT IF EXISTS documents_kb_check
+    `);
+    await client.query(`
+      ALTER TABLE documents ADD CONSTRAINT documents_kb_check
+      CHECK (kb IN ('hr', 'compliance', 'sandbox'))
+    `);
   });
 }

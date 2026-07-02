@@ -6,6 +6,11 @@ import type { KnowledgeBase, RetrievedChunk } from "@/lib/types";
 const CHUNK_SIZE = 500;
 const CHUNK_OVERLAP = 50;
 
+export interface RetrieveOptions {
+  topK?: number;
+  minSimilarity?: number;
+}
+
 export function chunkText(text: string, chunkSize = CHUNK_SIZE, overlap = CHUNK_OVERLAP): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const chunks: string[] = [];
@@ -68,8 +73,10 @@ export async function ingestDocument(params: {
 export async function retrieveChunks(
   query: string,
   kb: KnowledgeBase,
-  topK = 5
+  topK = 5,
+  options?: RetrieveOptions
 ): Promise<RetrievedChunk[]> {
+  const minSimilarity = options?.minSimilarity ?? 0;
   const queryEmbedding = await embedText(query);
 
   return withClient(async (client) => {
@@ -101,10 +108,41 @@ export async function retrieveChunks(
           similarity: cosineSimilarity(queryEmbedding, embedding),
         };
       })
+      .filter((chunk) => chunk.similarity >= minSimilarity)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, topK);
 
     return scored;
+  });
+}
+
+export async function listDocuments(kb: KnowledgeBase) {
+  return withClient(async (client) => {
+    const result = await client.query(
+      `SELECT d.id, d.title, d.file_type, d.created_at,
+        (SELECT COUNT(*)::int FROM chunks c WHERE c.document_id = d.id) AS chunk_count
+       FROM documents d
+       WHERE d.kb = $1
+       ORDER BY d.created_at DESC`,
+      [kb]
+    );
+    return result.rows.map((row) => ({
+      id: row.id as string,
+      title: row.title as string,
+      fileType: row.file_type as string,
+      createdAt: row.created_at as string,
+      chunkCount: row.chunk_count as number,
+    }));
+  });
+}
+
+export async function clearKnowledgeBase(kb: KnowledgeBase): Promise<number> {
+  return withClient(async (client) => {
+    const result = await client.query(
+      `DELETE FROM documents WHERE kb = $1 RETURNING id`,
+      [kb]
+    );
+    return result.rowCount ?? 0;
   });
 }
 

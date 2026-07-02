@@ -56,6 +56,14 @@ Works out of the box — no pgvector extension required. Embeddings are stored a
 
 Verify: `https://your-domain/api/health` should return `"status": "ok"`, `hrDocs: 4`, `complianceDocs: 3`.
 
+### RAG Lab (standalone sandbox)
+
+Direct URL: **`/rag-lab`** — generic English UI for testing RAG without company branding.
+
+- Upload any PDF/MD/TXT into an isolated sandbox knowledge base
+- Adjustable **Top K** and **Min similarity** (lower = fuzzier semantic search)
+- Answers with citations only for sources actually used in the response
+
 ### Option B: Railway pgvector template (optional, for scale)
 
 If you need native vector indexes at larger scale, use Railway's [pgvector template](https://railway.com/deploy/pgvector-latest) instead of standard Postgres. The app also works with pgvector — migrate will store embeddings as JSONB regardless.

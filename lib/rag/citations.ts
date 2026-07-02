@@ -5,7 +5,11 @@ export function buildContextFromChunks(chunks: RetrievedChunk[]): string {
   return chunks
     .map((chunk, i) => {
       const page = chunk.pageNumber ? ` (page ${chunk.pageNumber})` : "";
-      return `[${i + 1}] Source: "${chunk.documentTitle}"${page}\n${chunk.content}`;
+      const score =
+        chunk.similarity !== undefined
+          ? ` · relevance ${(chunk.similarity * 100).toFixed(0)}%`
+          : "";
+      return `[${i + 1}] Source: "${chunk.documentTitle}"${page}${score}\n${chunk.content}`;
     })
     .join("\n\n---\n\n");
 }
@@ -18,6 +22,7 @@ export function chunksToCitations(chunks: RetrievedChunk[]): Citation[] {
     excerpt: truncate(chunk.content, 200),
     sourceUrl: chunk.sourceUrl,
     chunkId: chunk.id,
+    similarity: chunk.similarity,
   }));
 }
 
