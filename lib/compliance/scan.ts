@@ -16,11 +16,21 @@ export async function runComplianceScan(maxItems = 8): Promise<{
   alerts: RegulatoryAlert[];
   errors: { source: string; error: string }[];
   usedMock?: boolean;
+  mode: "live" | "demo";
+  message: string;
 }> {
+  console.log("[compliance-scan] Starting live RSS scan...");
+  const startedAt = Date.now();
   const { items, errors } = await fetchAllFeeds(5);
 
   if (items.length === 0) {
-    return runMockComplianceScan({ showFeedErrors: false });
+    console.warn("[compliance-scan] No RSS items — falling back to demo alerts");
+    const result = await runMockComplianceScan({ showFeedErrors: false });
+    return {
+      ...result,
+      mode: "demo",
+      message: "RSS feeds returned no items — demo alerts loaded instead.",
+    };
   }
 
   const scanRunId = await withClient(async (client) => {
@@ -34,8 +44,15 @@ export async function runComplianceScan(maxItems = 8): Promise<{
     const itemsToAnalyze = items.slice(0, maxItems);
     const alerts: RegulatoryAlert[] = [];
 
-    for (const item of itemsToAnalyze) {
+    console.log(`[compliance-scan] Analyzing ${itemsToAnalyze.length} items with GPT...`);
+
+    for (let i = 0; i < itemsToAnalyze.length; i++) {
+      const item = itemsToAnalyze[i];
+      console.log(`[compliance-scan] [${i + 1}/${itemsToAnalyze.length}] ${item.sourceName}: ${item.title.slice(0, 60)}`);
       const analysis = await analyzeRegulatoryItem(item);
+      console.log(
+        `[compliance-scan] [${i + 1}/${itemsToAnalyze.length}] change_detected=${analysis.change_detected}, severity=${analysis.severity}`
+      );
       if (!analysis.change_detected) continue;
 
       const alert = await withClient(async (client) => {
@@ -77,21 +94,41 @@ export async function runComplianceScan(maxItems = 8): Promise<{
     });
 
     const scanRun = await getScanRun(scanRunId);
+    const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
 
     if (alerts.length === 0 && allFeedsFailed(errors)) {
-      return runMockComplianceScan({ showFeedErrors: false });
+      console.warn("[compliance-scan] All feeds failed — falling back to demo alerts");
+      const result = await runMockComplianceScan({ showFeedErrors: false });
+      return {
+        ...result,
+        mode: "demo",
+        message: "All RSS feeds failed — demo alerts loaded instead.",
+      };
     }
 
-    return { scanRun: scanRun!, alerts, errors, usedMock: false };
+    const message =
+      alerts.length > 0
+        ? `Live scan complete in ${elapsed}s: ${itemsToAnalyze.length} items analyzed, ${alerts.length} regulatory alert(s) created.`
+        : `Live scan complete in ${elapsed}s: ${itemsToAnalyze.length} items analyzed, no regulatory changes detected in latest headlines.`;
+
+    console.log(`[compliance-scan] ${message}`);
+
+    return { scanRun: scanRun!, alerts, errors, usedMock: false, mode: "live", message };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Scan failed";
+    console.error("[compliance-scan] Live scan failed:", message);
     await withClient(async (client) => {
       await client.query(
         `UPDATE scan_runs SET status = 'failed', error_message = $1, completed_at = NOW() WHERE id = $2`,
         [message, scanRunId]
       );
     });
-    return runMockComplianceScan({ showFeedErrors: false });
+    const result = await runMockComplianceScan({ showFeedErrors: false });
+    return {
+      ...result,
+      mode: "demo",
+      message: `Live scan error (${message}) — demo alerts loaded instead.`,
+    };
   }
 }
 

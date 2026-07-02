@@ -70,6 +70,8 @@ export async function runMockComplianceScan(options?: {
   alerts: RegulatoryAlert[];
   errors: { source: string; error: string }[];
   usedMock: boolean;
+  mode: "demo";
+  message: string;
 }> {
   const mocks = getMockAlertDefinitions();
 
@@ -143,5 +145,7 @@ export async function runMockComplianceScan(options?: {
         ? []
         : [{ source: "RSS feeds", error: "Unavailable — demo alerts loaded instead" }],
     usedMock: true,
+    mode: "demo" as const,
+    message: `Demo scan complete: ${alerts.length} sample alert(s) loaded.`,
   };
 }

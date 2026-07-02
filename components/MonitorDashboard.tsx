@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { RegulatoryAlert, ScanRun } from "@/lib/types";
 import { AlertCard } from "./AlertCard";
-import { RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { RefreshCw, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface MonitorDashboardProps {
@@ -11,12 +11,19 @@ interface MonitorDashboardProps {
   initialScanRuns: ScanRun[];
 }
 
+interface ScanResultInfo {
+  mode: "live" | "demo";
+  message: string;
+}
+
 export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDashboardProps) {
   const [alerts, setAlerts] = useState(initialAlerts);
   const [scanRuns, setScanRuns] = useState(initialScanRuns);
   const [scanning, setScanning] = useState(false);
+  const [scanMode, setScanMode] = useState<"live" | "demo" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanErrors, setScanErrors] = useState<{ source: string; error: string }[]>([]);
+  const [scanResult, setScanResult] = useState<ScanResultInfo | null>(null);
 
   useEffect(() => {
     setAlerts(initialAlerts);
@@ -25,8 +32,10 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
 
   const runScan = async (demo = false) => {
     setScanning(true);
+    setScanMode(demo ? "demo" : "live");
     setError(null);
     setScanErrors([]);
+    setScanResult(null);
     try {
       const res = await fetch("/api/compliance/scan", {
         method: "POST",
@@ -38,10 +47,15 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
       setAlerts((prev) => [...data.alerts, ...prev]);
       setScanRuns((prev) => [data.scanRun, ...prev]);
       if (data.errors?.length > 0 && !data.usedMock) setScanErrors(data.errors);
+      setScanResult({
+        mode: data.mode ?? (data.usedMock ? "demo" : "live"),
+        message: data.message ?? "Scan complete.",
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Scan failed");
     } finally {
       setScanning(false);
+      setScanMode(null);
     }
   };
 
@@ -56,7 +70,7 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
         </div>
         <div className="flex gap-2">
           <button onClick={() => runScan(true)} className="btn-secondary" disabled={scanning}>
-            {scanning ? (
+            {scanning && scanMode === "demo" ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading...
@@ -66,7 +80,7 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
             )}
           </button>
           <button onClick={() => runScan(false)} className="btn-primary" disabled={scanning}>
-            {scanning ? (
+            {scanning && scanMode === "live" ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Scanning...
@@ -81,9 +95,39 @@ export function MonitorDashboard({ initialAlerts, initialScanRuns }: MonitorDash
         </div>
       </div>
 
-      <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">
-        Prototype demo — use &ldquo;Load Demo Alerts&rdquo; for sample data, or &ldquo;Run Scan Now&rdquo; for live RSS feeds.
-      </div>
+      {scanning && (
+        <div className="mb-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+          {scanMode === "live" ? (
+            <>
+              <p className="font-medium">Live scan in progress</p>
+              <p className="mt-1 text-slate-600">
+                Fetching 4 RSS feeds and analyzing up to 8 headlines with GPT — usually takes
+                30–60 seconds. Check Railway/server logs for step-by-step output.
+              </p>
+            </>
+          ) : (
+            <p className="font-medium">Loading demo alerts...</p>
+          )}
+        </div>
+      )}
+
+      {scanResult && !scanning && (
+        <div
+          className={`mb-4 flex items-start gap-2 rounded-lg p-3 text-sm ${
+            scanResult.mode === "live"
+              ? "bg-green-50 text-green-800"
+              : "bg-blue-50 text-blue-800"
+          }`}
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-medium">
+              {scanResult.mode === "live" ? "Live RSS scan" : "Demo scan"}
+            </p>
+            <p className="mt-0.5">{scanResult.message}</p>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">

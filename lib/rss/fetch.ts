@@ -20,11 +20,14 @@ export async function fetchAllFeeds(maxPerFeed = 5): Promise<FetchResult> {
   const items: RSSItem[] = [];
   const errors: { source: string; error: string }[] = [];
 
+  console.log(`[rss] Fetching ${RSS_SOURCES.length} feeds (max ${maxPerFeed} items each)...`);
+
   await Promise.all(
     RSS_SOURCES.map(async (source) => {
       try {
         const feed = await parser.parseURL(source.url);
         const feedItems = (feed.items ?? []).slice(0, maxPerFeed);
+        console.log(`[rss] ${source.name}: ${feedItems.length} items`);
         for (const item of feedItems) {
           items.push({
             title: item.title ?? "Untitled",
@@ -35,14 +38,14 @@ export async function fetchAllFeeds(maxPerFeed = 5): Promise<FetchResult> {
           });
         }
       } catch (err) {
-        errors.push({
-          source: source.name,
-          error: err instanceof Error ? err.message : "Unknown error",
-        });
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.warn(`[rss] ${source.name} failed: ${message}`);
+        errors.push({ source: source.name, error: message });
       }
     })
   );
 
+  console.log(`[rss] Total: ${items.length} items, ${errors.length} feed errors`);
   return { items, errors };
 }
 

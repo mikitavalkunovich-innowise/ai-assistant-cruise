@@ -30,17 +30,25 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const demoOnly = body?.demo === true;
 
+    console.log(`[compliance-scan] POST demo=${demoOnly}`);
+
     if (demoOnly) {
       const result = await runMockComplianceScan({ showFeedErrors: false });
+      console.log(`[compliance-scan] Demo result: ${result.alerts.length} alerts`);
       return NextResponse.json(result);
     }
 
     if (!process.env.OPENAI_API_KEY) {
+      console.warn("[compliance-scan] OPENAI_API_KEY missing — using demo fallback");
       const result = await runMockComplianceScan({ showFeedErrors: false });
-      return NextResponse.json(result);
+      return NextResponse.json({
+        ...result,
+        message: "OPENAI_API_KEY not configured — demo alerts loaded instead of live scan.",
+      });
     }
 
     const result = await runComplianceScan(8);
+    console.log(`[compliance-scan] Result mode=${result.mode}, alerts=${result.alerts.length}`);
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Scan failed";
