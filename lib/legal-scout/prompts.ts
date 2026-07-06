@@ -15,6 +15,7 @@ Rules:
 - Quote exact excerpts from the document for key_clauses
 - Identify 3-6 potential_issues relevant to the user's question
 - search_topics should be 3 specific legal research queries (statutes, regulations, case law)
+- Write search_topics in the same language as the user's question; preserve exact legal terms from the question
 - Be precise about clause locations`;
 
 export const STATUTE_EXTRACTION_PROMPT = `You are a legal research assistant extracting statutory provisions from web page content.
@@ -79,9 +80,11 @@ Rules:
 export const RESEARCH_PLANNER_PROMPT = `You are a legal research planner.
 Given a user question and document analysis, generate 3 targeted Google search queries to find applicable statutes and regulations.
 
-Return JSON only: { "queries": ["query 1", "query 2", "query 3"] }
+Return JSON only: { "queries": ["query 1", "query 2", "query 3"], "language": "ru" }
 
 Rules:
-- Queries should be in English for better search results (even if question is in another language)
+- Write queries in the same language as the user's question (detect from the question text)
+- Set "language" to ISO 639-1 code of that language (e.g. "ru", "en", "de")
+- Preserve exact legal terms from the user's question (e.g. "изготовление на заказ", "серийный образец") — do not translate or generalize them
 - Include jurisdiction if known from document analysis
-- Focus on statutes, labor codes, contract law, not news articles`;
+- Focus on statutes, technical regulations, and official legal sources — not news articles`;

@@ -85,7 +85,7 @@ async function extractStatutesFromPage(
 export async function planResearchQueries(
   userQuery: string,
   docAnalysis: DocumentAnalysis
-): Promise<string[]> {
+): Promise<{ queries: string[]; language: string }> {
   const openai = getOpenAI();
   const response = await openai.chat.completions.create({
     model: CHAT_MODEL,
@@ -103,12 +103,20 @@ export async function planResearchQueries(
 
   const parsed = JSON.parse(response.choices[0]?.message?.content ?? "{}") as {
     queries?: string[];
+    language?: string;
   };
 
   const fromPlanner = (parsed.queries ?? []).slice(0, 3);
-  if (fromPlanner.length > 0) return fromPlanner;
+  const language = parsed.language ?? "en";
 
-  return (docAnalysis.search_topics ?? []).slice(0, 3);
+  if (fromPlanner.length > 0) {
+    return { queries: fromPlanner, language };
+  }
+
+  return {
+    queries: (docAnalysis.search_topics ?? []).slice(0, 3),
+    language,
+  };
 }
 
 function loadOfflineStatutes(): StatuteExcerpt[] {
@@ -146,8 +154,8 @@ export async function researchLegalNorms(params: {
     return { excerpts: loadOfflineStatutes(), offlineMode: true };
   }
 
-  const queries = await planResearchQueries(userQuery, docAnalysis);
-  onLog?.(`Planning ${queries.length} search queries`);
+  const { queries, language } = await planResearchQueries(userQuery, docAnalysis);
+  onLog?.(`Planning ${queries.length} search queries (language: ${language})`);
 
   const allExcerpts: StatuteExcerpt[] = [];
 
@@ -156,7 +164,7 @@ export async function researchLegalNorms(params: {
       onLog?.(`Searching: "${query}"`);
       let results;
       try {
-        results = await searchWeb(query, 5);
+        results = await searchWeb(query, 5, language);
       } catch (err) {
         onLog?.(`Search failed: ${err instanceof Error ? err.message : "unknown"}`);
         return;
@@ -164,7 +172,7 @@ export async function researchLegalNorms(params: {
 
       onLog?.(`Found ${results.length} results for "${query}"`);
 
-      const topResults = results.slice(0, 2);
+      const topResults = results.slice(0, 3);
       for (const result of topResults) {
         onLog?.(`Fetching: ${result.link}`);
         const pageText = await fetchPageText(result.link);

@@ -4,7 +4,11 @@ export function isSerpApiConfigured(): boolean {
   return Boolean(process.env.SERPAPI_TOKEN);
 }
 
-export async function searchWeb(query: string, num = 5): Promise<SerpResult[]> {
+export async function searchWeb(
+  query: string,
+  num = 5,
+  language?: string
+): Promise<SerpResult[]> {
   const token = process.env.SERPAPI_TOKEN;
   if (!token) return [];
 
@@ -13,8 +17,11 @@ export async function searchWeb(query: string, num = 5): Promise<SerpResult[]> {
     q: query,
     api_key: token,
     num: String(num),
-    hl: "en",
   });
+
+  if (language) {
+    params.set("hl", language);
+  }
 
   const res = await fetch(`https://serpapi.com/search.json?${params}`, {
     signal: AbortSignal.timeout(15000),
