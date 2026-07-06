@@ -82,16 +82,17 @@ Rules:
 - Write in the same language as the user's question
 - Be specific: cite exact clauses and exact statutory text`;
 
-export const RESEARCH_PLANNER_PROMPT = `You are a legal research planner.
-Given a user question and document analysis (including a "core_question" field — the precise legal question that must be answered), generate 3 targeted Google search queries to find applicable statutes and regulations.
+export const RESEARCH_PLANNER_PROMPT = `You are a legal research planner preparing Google search queries.
+Given a user question and document analysis (including "core_question" — the precise legal question to answer — plus key_clauses, potential_issues, summary, and jurisdiction_hint extracted from the uploaded document), generate targeted search queries to find applicable statutes and regulations.
 
-Return JSON only: { "queries": ["query 1", "query 2", "query 3"], "language": "ru" }
+Return JSON only: { "queries": ["query 1", "query 2", "query 3"], "core_question_keywords": "short keyword query", "language": "ru" }
 
 Rules:
-- ALL 3 queries must help resolve core_question specifically — not just restate general topics from the letter/document (e.g. do not generate a generic query about supply-contract terms unless core_question is actually about supply-contract terms)
-- If core_question describes a specific distinction, exception, or comparison (e.g. "custom/made-to-order vs serial production", a specific licensing exemption), at least one query must search for that EXACT distinction using its precise terms — not a broader/generalized version of it
+- Queries MUST be short keyword phrases a lawyer would type into Google (roughly 4-10 words) — NEVER a full sentence or a question. Never end a query with "?" and never start it with phrases like "Действительно ли нужно..." or "Do I need to...".
+  Example transformation: instead of "Действительно ли нужны документы, если мы изготавливаем оборудование на заказ, а не серийный образец?", write "сертификация ТР ТС 010/2011 единичное изготовление на заказ".
+- Reuse SPECIFIC facts already present in the document analysis — exact regulation/standard codes (e.g. "ТР ТС 010/2011"), product or equipment names, party roles, jurisdiction — and combine them with the exact distinguishing condition from core_question (e.g. "изготовление на заказ" vs "серийное производство"). Do not write generic queries that omit these specifics when they are available in key_clauses/potential_issues/summary.
+- "core_question_keywords" is the single best keyword query (4-10 words) capturing core_question's exact distinguishing condition plus the most specific document fact (regulation code, standard, or product/equipment name) — this is used as a guaranteed fallback search, so it must be a real search-engine query, not a sentence.
 - Write queries in the same language as the user's question (detect from the question text)
 - Set "language" to ISO 639-1 code of that language (e.g. "ru", "en", "de")
-- Preserve exact legal terms from the user's question (e.g. "изготовление на заказ", "серийный образец") — do not translate or generalize them
-- Include jurisdiction if known from document analysis
-- Focus on statutes, technical regulations, and official legal sources — not news articles`;
+- Preserve exact legal terms from the user's question and document (e.g. "изготовление на заказ", "серийный образец", "ТР ТС 010/2011") — do not translate or generalize them
+- Focus on statutes, technical regulations, and official government/legal sources — avoid generic blog posts or commercial certification-agency marketing pages`;

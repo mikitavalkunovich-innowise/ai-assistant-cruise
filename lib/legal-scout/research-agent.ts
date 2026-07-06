@@ -100,28 +100,31 @@ function isSameQuery(a: string, b: string): boolean {
 }
 
 /**
- * Reserves one query slot for core_question verbatim, so the exact distinguishing
- * question the user asked (e.g. "custom vs serial production") is always searched
- * even if the LLM planner drifts toward generic document-derived topics.
+ * Reserves one query slot for a keyword-optimized version of core_question, so the
+ * exact distinguishing question the user asked (e.g. "custom vs serial production")
+ * is always searched even if the LLM planner drifts toward generic document-derived
+ * topics. Uses core_question_keywords (a real search-engine query) rather than the
+ * raw core_question sentence, which is a full natural-language question and performs
+ * poorly as a Google query.
  */
 function buildQueriesWithGuaranteedSlot(
-  coreQuestion: string | undefined,
+  guaranteedQuery: string | undefined,
   plannedQueries: string[],
   maxTotal: number
 ): string[] {
   const cleanPlanned = plannedQueries.filter(Boolean);
-  const trimmedCore = coreQuestion?.trim();
+  const trimmedGuaranteed = guaranteedQuery?.trim();
 
-  if (!trimmedCore) {
+  if (!trimmedGuaranteed) {
     return cleanPlanned.slice(0, maxTotal);
   }
 
-  const alreadyCovered = cleanPlanned.some((q) => isSameQuery(q, trimmedCore));
+  const alreadyCovered = cleanPlanned.some((q) => isSameQuery(q, trimmedGuaranteed));
   if (alreadyCovered) {
     return cleanPlanned.slice(0, maxTotal);
   }
 
-  return [trimmedCore, ...cleanPlanned].slice(0, maxTotal);
+  return [trimmedGuaranteed, ...cleanPlanned].slice(0, maxTotal);
 }
 
 export async function planResearchQueries(
@@ -145,6 +148,7 @@ export async function planResearchQueries(
 
   const parsed = JSON.parse(response.choices[0]?.message?.content ?? "{}") as {
     queries?: string[];
+    core_question_keywords?: string;
     language?: string;
   };
 
@@ -152,8 +156,10 @@ export async function planResearchQueries(
   const fromPlanner = (parsed.queries ?? []).slice(0, MAX_RESEARCH_QUERIES);
   const plannedQueries = fromPlanner.length > 0 ? fromPlanner : (docAnalysis.search_topics ?? []);
 
+  const guaranteedQuery = parsed.core_question_keywords?.trim() || docAnalysis.core_question;
+
   const queries = buildQueriesWithGuaranteedSlot(
-    docAnalysis.core_question,
+    guaranteedQuery,
     plannedQueries,
     MAX_RESEARCH_QUERIES
   );
