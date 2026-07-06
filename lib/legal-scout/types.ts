@@ -77,6 +77,7 @@ export interface AnalysisResult {
   docxBase64: string;
   offlineMode: boolean;
   documentText: string;
+  ocrUsed: boolean;
   documentAnalysis: DocumentAnalysis;
   statuteExcerpts: StatuteExcerpt[];
 }

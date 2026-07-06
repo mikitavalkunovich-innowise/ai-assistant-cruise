@@ -5,9 +5,10 @@ import { Navbar } from "@/components/Navbar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isRagLab = pathname.startsWith("/rag-lab");
+  const isStandalone =
+    pathname.startsWith("/rag-lab") || pathname.startsWith("/legal-scout");
 
-  if (isRagLab) {
+  if (isStandalone) {
     return <main className="min-h-screen">{children}</main>;
   }
 

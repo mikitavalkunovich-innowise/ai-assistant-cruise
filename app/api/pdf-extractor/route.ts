@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOpenAI, CHAT_MODEL } from "@/lib/openai";
-import pdfParse from "pdf-parse";
+import { extractPdfText } from "@/lib/pdf/extract-pdf-text";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -25,20 +25,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid JSON schema — check syntax" }, { status: 400 });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
 
     let pdfText = "";
+    let ocrUsed = false;
     try {
-      const parsed = await pdfParse(buffer);
-      pdfText = parsed.text.trim();
+      const result = await extractPdfText(buffer);
+      pdfText = result.text;
+      ocrUsed = result.ocrUsed;
     } catch {
-      return NextResponse.json({ error: "Failed to parse PDF. Make sure the file is not scanned-only or password-protected." }, { status: 422 });
+      return NextResponse.json(
+        { error: "Failed to parse PDF. Make sure the file is not password-protected." },
+        { status: 422 }
+      );
     }
 
     if (!pdfText) {
       return NextResponse.json(
-        { error: "No readable text found in PDF. The file may be a scanned image without OCR." },
+        { error: "No readable text found in PDF after OCR." },
         { status: 422 }
       );
     }
@@ -93,7 +97,7 @@ Return a JSON object matching the template structure with values extracted from 
       extracted,
       meta: {
         pdfChars: pdfText.length,
-        pdfPages: Math.max(1, Math.round(pdfText.length / 3000)),
+        ocrUsed,
         model: CHAT_MODEL,
         tokensUsed: response.usage?.total_tokens ?? null,
       },

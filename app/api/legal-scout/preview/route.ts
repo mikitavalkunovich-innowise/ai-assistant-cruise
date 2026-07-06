@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { extractTextFromFile } from "@/lib/legal-scout/parse-document";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   try {
@@ -14,9 +14,9 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractTextFromFile(buffer, file.name);
+    const { text, ocrUsed } = await extractTextFromFile(buffer, file.name);
 
-    return NextResponse.json({ text, fileName: file.name });
+    return NextResponse.json({ text, fileName: file.name, ocrUsed });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Preview failed";
     return NextResponse.json({ error: message }, { status: 400 });

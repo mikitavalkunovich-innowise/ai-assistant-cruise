@@ -17,10 +17,10 @@ import { ConclusionPreview } from "./legal-scout/ConclusionPreview";
 import { DocumentViewer } from "./legal-scout/DocumentViewer";
 import type { AnalysisStep, LegalConclusion } from "@/lib/legal-scout/types";
 
-async function loadDocumentPreview(file: File): Promise<string> {
+async function loadDocumentPreview(file: File): Promise<{ text: string; ocrUsed: boolean }> {
   const lower = file.name.toLowerCase();
   if (lower.endsWith(".txt") || lower.endsWith(".md")) {
-    return file.text();
+    return { text: await file.text(), ocrUsed: false };
   }
 
   const formData = new FormData();
@@ -30,13 +30,14 @@ async function loadDocumentPreview(file: File): Promise<string> {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(data.error ?? "Failed to load document preview");
   }
-  const data = (await res.json()) as { text: string };
-  return data.text;
+  const data = (await res.json()) as { text: string; ocrUsed?: boolean };
+  return { text: data.text, ocrUsed: data.ocrUsed ?? false };
 }
 
 export function LegalScoutPage() {
   const [file, setFile] = useState<File | null>(null);
   const [documentText, setDocumentText] = useState<string | null>(null);
+  const [documentOcrUsed, setDocumentOcrUsed] = useState(false);
   const [documentPreviewLoading, setDocumentPreviewLoading] = useState(false);
   const [documentPreviewError, setDocumentPreviewError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -53,6 +54,7 @@ export function LegalScoutPage() {
   useEffect(() => {
     if (!file) {
       setDocumentText(null);
+      setDocumentOcrUsed(false);
       setDocumentPreviewLoading(false);
       setDocumentPreviewError(null);
       return;
@@ -61,10 +63,14 @@ export function LegalScoutPage() {
     let cancelled = false;
     setDocumentPreviewLoading(true);
     setDocumentPreviewError(null);
+    setDocumentOcrUsed(false);
 
     loadDocumentPreview(file)
-      .then((text) => {
-        if (!cancelled) setDocumentText(text);
+      .then(({ text, ocrUsed }) => {
+        if (!cancelled) {
+          setDocumentText(text);
+          setDocumentOcrUsed(ocrUsed);
+        }
       })
       .catch((err) => {
         if (!cancelled) {
@@ -170,6 +176,7 @@ export function LegalScoutPage() {
                   docxBase64: string;
                   offlineMode: boolean;
                   documentText: string;
+                  ocrUsed: boolean;
                 };
               }
             | { type: "error"; message: string };
@@ -183,6 +190,7 @@ export function LegalScoutPage() {
               setDocxBase64(payload.data.docxBase64);
               setOfflineMode(payload.data.offlineMode);
               setDocumentText(payload.data.documentText);
+              setDocumentOcrUsed(payload.data.ocrUsed);
               setCurrentStep("done");
               addLog("Analysis complete");
             }
@@ -322,6 +330,12 @@ export function LegalScoutPage() {
                   fileName={file?.name}
                   text={documentText}
                   loading={documentPreviewLoading}
+                  loadingMessage={
+                    file?.name.toLowerCase().endsWith(".pdf")
+                      ? "Extracting text (OCR may run for scanned PDFs)..."
+                      : "Loading document preview..."
+                  }
+                  ocrUsed={documentOcrUsed}
                   isMarkdown={(file?.name ?? "").toLowerCase().endsWith(".md")}
                 />
               )}

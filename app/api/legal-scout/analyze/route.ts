@@ -56,6 +56,7 @@ export async function POST(request: Request) {
             docxBase64: result.docxBase64,
             offlineMode: result.offlineMode,
             documentText: result.documentText,
+            ocrUsed: result.ocrUsed,
             documentAnalysis: result.documentAnalysis,
             statuteExcerpts: result.statuteExcerpts,
           },

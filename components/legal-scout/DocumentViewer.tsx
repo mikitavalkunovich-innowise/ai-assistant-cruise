@@ -71,6 +71,8 @@ interface DocumentViewerProps {
   fileName?: string;
   text: string | null;
   loading?: boolean;
+  loadingMessage?: string;
+  ocrUsed?: boolean;
   isMarkdown?: boolean;
   className?: string;
 }
@@ -80,6 +82,8 @@ export function DocumentViewer({
   fileName,
   text,
   loading,
+  loadingMessage = "Loading document preview...",
+  ocrUsed,
   isMarkdown,
   className,
 }: DocumentViewerProps) {
@@ -92,7 +96,7 @@ export function DocumentViewer({
         )}
       >
         <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
-        <span className="ml-2 text-sm text-slate-400">Loading document preview...</span>
+        <span className="ml-2 text-sm text-slate-400">{loadingMessage}</span>
       </div>
     );
   }
@@ -104,7 +108,14 @@ export function DocumentViewer({
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium uppercase tracking-widest text-slate-500">{title}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-xs font-medium uppercase tracking-widest text-slate-500">{title}</p>
+          {ocrUsed && (
+            <span className="shrink-0 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-400">
+              OCR
+            </span>
+          )}
+        </div>
         {fileName && (
           <span className="flex items-center gap-1 text-xs text-slate-500 truncate max-w-[180px]">
             <FileText className="h-3 w-3 shrink-0" />

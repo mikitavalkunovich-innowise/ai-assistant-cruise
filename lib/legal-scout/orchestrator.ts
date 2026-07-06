@@ -18,7 +18,9 @@ export async function runLegalAnalysis(params: {
   };
 
   emit("parsing_document", "Extracting text from uploaded document...");
-  const documentText = await extractTextFromFile(fileBuffer, fileName);
+  const { text: documentText, ocrUsed } = await extractTextFromFile(fileBuffer, fileName, {
+    onStatus: (msg) => emit("parsing_document", msg),
+  });
 
   emit("parsing_document", `Indexed document (${documentText.length.toLocaleString()} characters)`);
   const rag = new InMemoryRag();
@@ -69,6 +71,7 @@ export async function runLegalAnalysis(params: {
     docxBase64: docxBuffer.toString("base64"),
     offlineMode,
     documentText,
+    ocrUsed,
     documentAnalysis,
     statuteExcerpts,
   };
