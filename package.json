@@ -12,6 +12,7 @@
     "postinstall": "node -e \"console.log('Run npm run db:migrate && npm run db:seed after setting DATABASE_URL')\""
   },
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.2",
     "clsx": "^2.1.1",
     "docx": "^9.7.1",
     "lucide-react": "^0.468.0",

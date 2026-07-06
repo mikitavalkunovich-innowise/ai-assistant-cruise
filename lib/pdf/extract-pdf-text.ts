@@ -1,10 +1,39 @@
 import pdfParse from "pdf-parse";
-import { pdf } from "pdf-to-img";
 import { getOpenAI } from "@/lib/openai";
 
 const OCR_MODEL = "gpt-4o-mini";
 const MAX_OCR_PAGES = 20;
 const OCR_SCALE = 2;
+
+type PdfRenderer = (typeof import("pdf-to-img"))["pdf"];
+
+let pdfRenderer: PdfRenderer | null = null;
+
+async function loadPdfRenderer(): Promise<PdfRenderer> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const path = await import("node:path");
+  const { pathToFileURL } = await import("node:url");
+
+  const workerPath = path.join(
+    process.cwd(),
+    "node_modules",
+    "pdfjs-dist",
+    "legacy",
+    "build",
+    "pdf.worker.mjs"
+  );
+  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(workerPath).href;
+
+  const { pdf } = await import("pdf-to-img");
+  return pdf;
+}
+
+async function getPdfRenderer() {
+  if (!pdfRenderer) {
+    pdfRenderer = await loadPdfRenderer();
+  }
+  return pdfRenderer;
+}
 
 async function ocrPageImage(
   image: Buffer,
@@ -45,6 +74,7 @@ async function extractTextFromPdfWithOcr(
 ): Promise<string> {
   onStatus?.("No text layer detected — running OCR on scanned pages...");
 
+  const pdf = await getPdfRenderer();
   const dataUrl = `data:application/pdf;base64,${buffer.toString("base64")}`;
   const doc = await pdf(dataUrl, { scale: OCR_SCALE });
 
