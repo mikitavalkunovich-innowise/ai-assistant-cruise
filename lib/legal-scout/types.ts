@@ -33,6 +33,7 @@ export interface LegalConclusion {
 
 export interface DocumentAnalysis {
   summary: string;
+  core_question: string;
   parties: { role: string; name: string }[];
   key_clauses: { title: string; excerpt: string; location: string }[];
   potential_issues: { issue: string; clause_location: string; severity: RiskLevel }[];

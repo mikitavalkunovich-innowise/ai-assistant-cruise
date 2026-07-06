@@ -35,6 +35,7 @@ export async function analyzeDocument(params: {
 
   return {
     summary: parsed.summary ?? "",
+    core_question: parsed.core_question ?? userQuery,
     parties: parsed.parties ?? [],
     key_clauses: parsed.key_clauses ?? [],
     potential_issues: parsed.potential_issues ?? [],

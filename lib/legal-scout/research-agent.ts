@@ -82,6 +82,48 @@ async function extractStatutesFromPage(
     }));
 }
 
+const MAX_RESEARCH_QUERIES = 3;
+
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isSameQuery(a: string, b: string): boolean {
+  const na = normalizeForComparison(a);
+  const nb = normalizeForComparison(b);
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+/**
+ * Reserves one query slot for core_question verbatim, so the exact distinguishing
+ * question the user asked (e.g. "custom vs serial production") is always searched
+ * even if the LLM planner drifts toward generic document-derived topics.
+ */
+function buildQueriesWithGuaranteedSlot(
+  coreQuestion: string | undefined,
+  plannedQueries: string[],
+  maxTotal: number
+): string[] {
+  const cleanPlanned = plannedQueries.filter(Boolean);
+  const trimmedCore = coreQuestion?.trim();
+
+  if (!trimmedCore) {
+    return cleanPlanned.slice(0, maxTotal);
+  }
+
+  const alreadyCovered = cleanPlanned.some((q) => isSameQuery(q, trimmedCore));
+  if (alreadyCovered) {
+    return cleanPlanned.slice(0, maxTotal);
+  }
+
+  return [trimmedCore, ...cleanPlanned].slice(0, maxTotal);
+}
+
 export async function planResearchQueries(
   userQuery: string,
   docAnalysis: DocumentAnalysis
@@ -106,17 +148,17 @@ export async function planResearchQueries(
     language?: string;
   };
 
-  const fromPlanner = (parsed.queries ?? []).slice(0, 3);
   const language = parsed.language ?? "en";
+  const fromPlanner = (parsed.queries ?? []).slice(0, MAX_RESEARCH_QUERIES);
+  const plannedQueries = fromPlanner.length > 0 ? fromPlanner : (docAnalysis.search_topics ?? []);
 
-  if (fromPlanner.length > 0) {
-    return { queries: fromPlanner, language };
-  }
+  const queries = buildQueriesWithGuaranteedSlot(
+    docAnalysis.core_question,
+    plannedQueries,
+    MAX_RESEARCH_QUERIES
+  );
 
-  return {
-    queries: (docAnalysis.search_topics ?? []).slice(0, 3),
-    language,
-  };
+  return { queries, language };
 }
 
 function loadOfflineStatutes(): StatuteExcerpt[] {
