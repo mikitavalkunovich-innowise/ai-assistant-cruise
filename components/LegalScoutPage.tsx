@@ -47,6 +47,10 @@ export function LegalScoutPage() {
 
   const loadSample = async () => {
     const res = await fetch("/api/legal-scout/sample");
+    if (!res.ok) {
+      setError("Failed to load sample contract");
+      return;
+    }
     const blob = await res.blob();
     const sampleFile = new File([blob], "sample-employment-contract.md", {
       type: "text/markdown",

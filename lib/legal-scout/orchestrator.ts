@@ -40,7 +40,7 @@ export async function runLegalAnalysis(params: {
   const { excerpts: statuteExcerpts, offlineMode } = await researchLegalNorms({
     userQuery,
     docAnalysis: documentAnalysis,
-    onLog: (msg) => emit("researching_web", msg, { offlineMode }),
+    onLog: (msg) => emit("researching_web", msg),
   });
   emit(
     "researching_web",
