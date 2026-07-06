@@ -68,6 +68,7 @@ export async function runLegalAnalysis(params: {
     conclusion,
     docxBase64: docxBuffer.toString("base64"),
     offlineMode,
+    documentText,
     documentAnalysis,
     statuteExcerpts,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Upload,
   FileText,
@@ -14,10 +14,31 @@ import { cn } from "@/lib/utils";
 import { VoiceInput } from "./legal-scout/VoiceInput";
 import { AnalysisProgress } from "./legal-scout/AnalysisProgress";
 import { ConclusionPreview } from "./legal-scout/ConclusionPreview";
+import { DocumentViewer } from "./legal-scout/DocumentViewer";
 import type { AnalysisStep, LegalConclusion } from "@/lib/legal-scout/types";
+
+async function loadDocumentPreview(file: File): Promise<string> {
+  const lower = file.name.toLowerCase();
+  if (lower.endsWith(".txt") || lower.endsWith(".md")) {
+    return file.text();
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/legal-scout/preview", { method: "POST", body: formData });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? "Failed to load document preview");
+  }
+  const data = (await res.json()) as { text: string };
+  return data.text;
+}
 
 export function LegalScoutPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [documentText, setDocumentText] = useState<string | null>(null);
+  const [documentPreviewLoading, setDocumentPreviewLoading] = useState(false);
+  const [documentPreviewError, setDocumentPreviewError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [query, setQuery] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
@@ -28,6 +49,39 @@ export function LegalScoutPage() {
   const [conclusion, setConclusion] = useState<LegalConclusion | null>(null);
   const [docxBase64, setDocxBase64] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setDocumentText(null);
+      setDocumentPreviewLoading(false);
+      setDocumentPreviewError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setDocumentPreviewLoading(true);
+    setDocumentPreviewError(null);
+
+    loadDocumentPreview(file)
+      .then((text) => {
+        if (!cancelled) setDocumentText(text);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setDocumentText(null);
+          setDocumentPreviewError(
+            err instanceof Error ? err.message : "Failed to load document preview"
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDocumentPreviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -41,6 +95,8 @@ export function LegalScoutPage() {
       setFile(dropped);
       setConclusion(null);
       setDocxBase64(null);
+      setLogs([]);
+      setCurrentStep(null);
       setError(null);
     }
   }, []);
@@ -61,6 +117,8 @@ export function LegalScoutPage() {
     );
     setConclusion(null);
     setDocxBase64(null);
+    setLogs([]);
+    setCurrentStep(null);
     setError(null);
   };
 
@@ -105,7 +163,15 @@ export function LegalScoutPage() {
           if (!line.startsWith("data: ")) continue;
           const payload = JSON.parse(line.slice(6)) as
             | { step: AnalysisStep; message: string; offlineMode?: boolean }
-            | { type: "result"; data: { conclusion: LegalConclusion; docxBase64: string; offlineMode: boolean } }
+            | {
+                type: "result";
+                data: {
+                  conclusion: LegalConclusion;
+                  docxBase64: string;
+                  offlineMode: boolean;
+                  documentText: string;
+                };
+              }
             | { type: "error"; message: string };
 
           if ("type" in payload) {
@@ -116,6 +182,7 @@ export function LegalScoutPage() {
               setConclusion(payload.data.conclusion);
               setDocxBase64(payload.data.docxBase64);
               setOfflineMode(payload.data.offlineMode);
+              setDocumentText(payload.data.documentText);
               setCurrentStep("done");
               addLog("Analysis complete");
             }
@@ -200,6 +267,9 @@ export function LegalScoutPage() {
                   if (picked) {
                     setFile(picked);
                     setConclusion(null);
+                    setDocxBase64(null);
+                    setLogs([]);
+                    setCurrentStep(null);
                     setError(null);
                   }
                 }}
@@ -216,7 +286,16 @@ export function LegalScoutPage() {
                     </div>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFile(null);
+                      setConclusion(null);
+                      setDocxBase64(null);
+                      setLogs([]);
+                      setCurrentStep(null);
+                      setError(null);
+                      if (fileInputRef.current) fileInputRef.current.value = "";
+                    }}
                     className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-700"
                   >
                     <X className="h-4 w-4" />
@@ -230,6 +309,24 @@ export function LegalScoutPage() {
               )}
             </div>
           </div>
+
+          {(file || documentPreviewLoading) && (
+            <div>
+              {documentPreviewError ? (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+                  Preview unavailable: {documentPreviewError}
+                </div>
+              ) : (
+                <DocumentViewer
+                  title="Source Document"
+                  fileName={file?.name}
+                  text={documentText}
+                  loading={documentPreviewLoading}
+                  isMarkdown={(file?.name ?? "").toLowerCase().endsWith(".md")}
+                />
+              )}
+            </div>
+          )}
 
           <VoiceInput value={query} onChange={setQuery} disabled={analyzing} />
 
@@ -264,7 +361,8 @@ export function LegalScoutPage() {
         </div>
 
         {/* Right: progress + result */}
-        <div className="space-y-5">
+        <div className={cn("space-y-5", conclusion && "lg:col-span-2 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0")}>
+          <div className="space-y-5">
           {(analyzing || logs.length > 0) && (
             <AnalysisProgress
               currentStep={currentStep}
@@ -279,6 +377,7 @@ export function LegalScoutPage() {
               {error}
             </div>
           )}
+          </div>
 
           {conclusion ? (
             <ConclusionPreview

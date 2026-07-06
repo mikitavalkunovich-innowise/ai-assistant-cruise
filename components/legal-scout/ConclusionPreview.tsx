@@ -1,7 +1,9 @@
 "use client";
 
-import { Download, FileText } from "lucide-react";
+import { useState } from "react";
+import { Download, FileText, LayoutTemplate, List } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LegalMemoPreview } from "./LegalMemoPreview";
 import type { LegalConclusion } from "@/lib/legal-scout/types";
 
 const riskStyles = {
@@ -10,6 +12,8 @@ const riskStyles = {
   low: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
 };
 
+type ViewMode = "document" | "structured";
+
 interface ConclusionPreviewProps {
   conclusion: LegalConclusion;
   docxBase64: string | null;
@@ -17,6 +21,8 @@ interface ConclusionPreviewProps {
 }
 
 export function ConclusionPreview({ conclusion, docxBase64, onDownloadJson }: ConclusionPreviewProps) {
+  const [view, setView] = useState<ViewMode>("document");
+
   const downloadDocx = () => {
     if (!docxBase64) return;
     const bytes = Uint8Array.from(atob(docxBase64), (c) => c.charCodeAt(0));
@@ -32,7 +38,7 @@ export function ConclusionPreview({ conclusion, docxBase64, onDownloadJson }: Co
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-slate-100">{conclusion.conclusion_title}</h3>
           <div className="mt-2 flex gap-2">
@@ -49,7 +55,7 @@ export function ConclusionPreview({ conclusion, docxBase64, onDownloadJson }: Co
             </span>
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           {docxBase64 && (
             <button
               onClick={downloadDocx}
@@ -69,6 +75,45 @@ export function ConclusionPreview({ conclusion, docxBase64, onDownloadJson }: Co
         </div>
       </div>
 
+      <div className="flex gap-1 rounded-lg border border-slate-700 bg-slate-900/60 p-1">
+        <button
+          onClick={() => setView("document")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition",
+            view === "document"
+              ? "bg-indigo-600 text-white"
+              : "text-slate-400 hover:text-slate-200"
+          )}
+        >
+          <LayoutTemplate className="h-3.5 w-3.5" />
+          Document Preview
+        </button>
+        <button
+          onClick={() => setView("structured")}
+          className={cn(
+            "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium transition",
+            view === "structured"
+              ? "bg-indigo-600 text-white"
+              : "text-slate-400 hover:text-slate-200"
+          )}
+        >
+          <List className="h-3.5 w-3.5" />
+          Structured View
+        </button>
+      </div>
+
+      {view === "document" ? (
+        <LegalMemoPreview conclusion={conclusion} />
+      ) : (
+        <StructuredConclusion conclusion={conclusion} />
+      )}
+    </div>
+  );
+}
+
+function StructuredConclusion({ conclusion }: { conclusion: LegalConclusion }) {
+  return (
+    <div className="space-y-4">
       <div className="rounded-xl border border-slate-700 bg-slate-900/50 p-4">
         <p className="text-xs font-medium uppercase tracking-widest text-slate-500 mb-2">
           Executive Summary
@@ -118,7 +163,10 @@ export function ConclusionPreview({ conclusion, docxBase64, onDownloadJson }: Co
                 {f.statute_citations.map((s, i) => (
                   <div key={i} className="rounded-lg bg-slate-800/50 p-2 text-xs text-slate-400">
                     <p className="font-medium text-slate-300">{s.reference}</p>
-                    <p className="mt-1">{s.full_text.slice(0, 300)}{s.full_text.length > 300 ? "…" : ""}</p>
+                    <p className="mt-1">
+                      {s.full_text.slice(0, 300)}
+                      {s.full_text.length > 300 ? "…" : ""}
+                    </p>
                     {s.source_url && (
                       <a
                         href={s.source_url}
